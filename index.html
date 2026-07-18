@@ -541,22 +541,24 @@
 
 </div>
 <script>
-  var SHEET_URL_MASTERS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQoBpCOm-JQcBhkhpcfak7PiHUwsw2oCbvHGjzGn4gTATaK6X6feEZnH6xn3cmNT8X00PPXgowx8gb4/pub?gid=403684240&single=true&output=csv";
-  var SHEET_URL_EXPERTS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQoBpCOm-JQcBhkhpcfak7PiHUwsw2oCbvHGjzGn4gTATaK6X6feEZnH6xn3cmNT8X00PPXgowx8gb4/pub?gid=304958728&single=true&output=csv";
+  var SHEET_ID = "1NG3FPP70riMzhHPJ6Suz30bhJxUocFd_rKDKxn0kZbM";
+  var SHEET_URL_MASTERS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=Masters";
+  var SHEET_URL_EXPERTS = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/gviz/tq?tqx=out:csv&sheet=Experts";
 
   // Sheet column indices (0-based):
-  // A=0 flag image (skip), B=1 country code, C=2 BGA name,
-  // D=3 filter (hide if "1"), E=4 ignore,
-  // F=5 Peak Elo, G=6 Date, H=7 Peak Arena, I=8 Season (not shown),
-  // J=9 Player ID, K=10 (skip), L=11 Game ID
+  // A=0 blank/display helper (skip), B=1 country code, C=2 BGA name,
+  // D=3 alternate-account filter (hide if "1"), E=4 server marker (skip),
+  // F=5 Peak Elo, G=6 Date, H=7 Arena rating (skip),
+  // I=8 best season-ending Arena rank, J=9 Season (not shown),
+  // K=10 Player ID, L=11 emulator ID (skip), M=12 Peak-Elo table ID.
   var IDX_COUNTRY   = 1;
   var IDX_NAME      = 2;
   var IDX_FILTER    = 3;
   var IDX_ELO       = 5;
   var IDX_DATE      = 6;
-  var IDX_ARENA     = 7;
-  var IDX_PLAYER_ID = 9;
-  var IDX_GAME_ID   = 11;
+  var IDX_ARENA     = 8;
+  var IDX_PLAYER_ID = 10;
+  var IDX_GAME_ID   = 12;
 
   function escapeHTML(value) {
     return String(value)
@@ -850,10 +852,6 @@
       else if (arenaNum === 2) arenaClass = "silver";
       else if (arenaNum === 3) arenaClass = "bronze";
 
-      var bgaIcon = "";
-      if (/^\d+$/.test(playerId)) {
-      }
-
       var eloCell = safeElo;
       if (/^\d+$/.test(gameId)) {
         eloCell = '<a href="https://boardgamearena.com/table?table=' + gameId + '" target="_blank" rel="noopener noreferrer" class="elo-link">' + safeElo + '</a>';
@@ -877,7 +875,7 @@
                        + '</a>';
         }
       });
-      var nameCell = playerId
+      var nameCell = /^\d+$/.test(playerId)
         ? '<a href="https://boardgamearena.com/player?id=' + encodeURIComponent(playerId) + '" target="_blank" rel="noopener noreferrer" class="player-link">' + safeName + '</a>'
         : safeName;
       html += '<td class="player">' + nameCell + ' ' + socialIcons + '</td>';
