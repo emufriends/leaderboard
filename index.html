@@ -43,6 +43,9 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Keep the page width stable when a filter changes the scrollbar state. */
+    html { overflow-y: scroll; }
+
     body {
       font-family: 'Work Sans', sans-serif;
       min-height: 100vh;
@@ -160,16 +163,16 @@
 
     /* ── CONTROLS ── */
     .controls {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(200px, 1fr) 180px 110px;
       align-items: center;
       gap: 12px;
       margin-bottom: 20px;
-      flex-wrap: wrap;
     }
 
     .search-box {
-      flex: 1;
-      min-width: 200px;
+      width: 100%;
+      min-width: 0;
       padding: 9px 14px;
       border-radius: 8px;
       border: 1px solid #739570;
@@ -185,12 +188,20 @@
     .search-box:focus { border-color: #a8d5c2; }
 
     .row-count {
+      flex: 0 0 110px;
+      width: 110px;
       color: #a8d5c2;
       font-size: 0.85rem;
       white-space: nowrap;
+      text-align: right;
     }
 
-    .country-dropdown { position: relative; min-width: 180px; }
+    .country-dropdown {
+      position: relative;
+      flex: 0 0 180px;
+      width: 180px;
+      min-width: 180px;
+    }
 
     .country-dropdown-btn {
       width: 100%;
@@ -218,6 +229,13 @@
       opacity: 0.6;
       flex-shrink: 0;
       transition: transform 0.15s;
+    }
+
+    #countryDropdownLabel {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .country-dropdown-btn.open .arrow { transform: rotate(180deg); }
@@ -299,10 +317,10 @@
 
     /* ── TABLE ── */
     .table-wrapper {
-      overflow-x: auto;
       border-radius: 10px;
       border: 3px solid #3a7a62;
       overflow: hidden;
+      overflow-x: auto;
     }
 
     table {
@@ -314,10 +332,11 @@
 
     col.col-rank  { width: 10%; }
     col.col-flag  { width: 10%; }
-    col.col-name  { width: 30%; }
+    col.col-name  { width: 25%; }
     col.col-elo   { width: 15%; }
-    col.col-date  { width: 20%; }
-    col.col-arena { width: 15%; }
+    col.col-arena-rating { width: 12.5%; }
+    col.col-date  { width: 15%; }
+    col.col-finish { width: 12.5%; }
 
     thead tr { background-color: #011f1a; }
 
@@ -417,6 +436,17 @@
     td.arena.silver { background-color: #6e7a72; color: #ffffff; }
     td.arena.bronze { background-color: #8a5228; color: #ffffff; }
 
+    td.arena-rating { font-weight: 400; }
+
+    td.arena-rating a.arena-link {
+      color: #e8f5f0;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      text-decoration-color: rgba(255,255,255,0.4);
+      transition: text-decoration-color 0.15s;
+    }
+    td.arena-rating a.arena-link:hover { text-decoration-color: rgba(255,255,255,1); }
+
     .status {
       text-align: center;
       padding: 40px;
@@ -434,6 +464,16 @@
     }
 
     @media (max-width: 768px) {
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .search-box {
+        flex: 1 1 100%;
+        min-width: 200px;
+      }
+
       .tooltip-text {
         width: 160px;
         font-size: 0.70rem;
@@ -456,14 +496,15 @@
         -webkit-overflow-scrolling: touch;
       }
 
-      table { min-width: 600px; }
+      table { min-width: 630px; }
 
       col.col-rank  { width: 48px; }
       col.col-flag  { width: 52px; }
       col.col-name  { width: 150px; }
       col.col-elo   { width: 90px; }
+      col.col-arena-rating { width: 90px; }
       col.col-date  { width: 110px; }
-      col.col-arena { width: 90px; }
+      col.col-finish { width: 90px; }
 
       /* Sticky rank column */
       thead th:nth-child(1),
@@ -503,7 +544,7 @@
 
     <div class="checkbox-row">
       <label class="checkbox-label">
-        <input type="checkbox" id="includeExperts" onchange="reloadData()" />
+        <input type="checkbox" id="includeExperts" checked onchange="reloadData()" />
         Include selected Experts
       </label>
       <span class="tooltip-wrap">
@@ -519,21 +560,23 @@
           <col class="col-flag" />
           <col class="col-name" />
           <col class="col-elo" />
+          <col class="col-arena-rating" />
           <col class="col-date" />
-          <col class="col-arena" />
+          <col class="col-finish" />
         </colgroup>
         <thead>
           <tr>
             <th data-col="rank">#</th>
             <th>Country</th>
             <th data-col="2" onclick="sortTable(2)">BGA Name<span class="sort-icon">&#8645;</span></th>
-            <th data-col="5" onclick="sortTable(5)">Peak Elo<span class="sort-icon">&#8645;</span></th>
+            <th data-col="5" onclick="sortTable(5)">Top Elo<span class="sort-icon">&#8645;</span></th>
+            <th data-col="7" onclick="sortTable(7)">Top Arena<span class="sort-icon">&#8645;</span></th>
             <th data-col="6" onclick="sortTable(6)">Date<span class="sort-icon">&#8645;</span></th>
-            <th data-col="7" onclick="sortTable(7)">Peak Arena<span class="sort-icon">&#8645;</span></th>
+            <th data-col="8" onclick="sortTable(8)">Top Finish<span class="sort-icon">&#8645;</span></th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr><td colspan="6" class="status">Loading leaderboard...</td></tr>
+          <tr><td colspan="7" class="status">Loading leaderboard...</td></tr>
         </tbody>
       </table>
     </div>
@@ -548,17 +591,19 @@
   // Sheet column indices (0-based):
   // A=0 blank/display helper (skip), B=1 country code, C=2 BGA name,
   // D=3 alternate-account filter (hide if "1"), E=4 server marker (skip),
-  // F=5 Peak Elo, G=6 Date, H=7 Arena rating (skip),
-  // I=8 best season-ending Arena rank, J=9 Season (not shown),
-  // K=10 Player ID, L=11 emulator ID (skip), M=12 Peak-Elo table ID.
+  // F=5 Peak Elo, G=6 Date, H=7 Peak Arena rating,
+  // I=8 Peak Finish, J=9 Season (not shown), K=10 Player ID,
+  // L=11 emulator ID (skip), M=12 Peak-Elo table ID, N=13 Peak-Arena table ID.
   var IDX_COUNTRY   = 1;
   var IDX_NAME      = 2;
   var IDX_FILTER    = 3;
   var IDX_ELO       = 5;
   var IDX_DATE      = 6;
-  var IDX_ARENA     = 8;
+  var IDX_ARENA_RATING = 7;
+  var IDX_ARENA_FINISH = 8;
   var IDX_PLAYER_ID = 10;
-  var IDX_GAME_ID   = 12;
+  var IDX_ELO_GAME_ID   = 12;
+  var IDX_ARENA_GAME_ID = 13;
 
   function escapeHTML(value) {
     return String(value)
@@ -567,6 +612,30 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function displayOrNA(value) {
+    var text = value == null ? "" : String(value).trim();
+    if (!text || /^(?:n\/a|#n\/a|#ref!|#value!|#div\/0!|#name\?)$/i.test(text)) return "n/a";
+    return text;
+  }
+
+  // Spreadsheet exports can represent identifiers as numbers, text, or
+  // formatted text. Keep them as strings to avoid precision loss.
+  function normalizeId(value) {
+    if (value == null) return "";
+    var text = String(value).trim().replace(/^'/, "").replace(/,/g, "");
+    if (!text) return "";
+    if (/^\d+$/.test(text)) return text;
+    var decimal = text.match(/^(\d+)\.0+$/);
+    return decimal ? decimal[1] : "";
+  }
+
+  function sortNumber(value, missingValue) {
+    var text = displayOrNA(value);
+    if (text === "n/a") return missingValue;
+    var number = parseFloat(text);
+    return isNaN(number) ? missingValue : number;
   }
 
   function getCountryName(code) {
@@ -672,7 +741,7 @@
     document.getElementById("searchBox").value = "";
     selectedCountries = null;
     document.getElementById("countryDropdownLabel").textContent = "All countries";
-    document.getElementById("tableBody").innerHTML = '<tr><td colspan="6" class="status">Loading leaderboard...</td></tr>';
+    document.getElementById("tableBody").innerHTML = '<tr><td colspan="7" class="status">Loading leaderboard...</td></tr>';
     loadSocials(function() { loadData(); });
   }
 
@@ -698,7 +767,7 @@
         combined = combined.concat(rows);
       });
       combined.sort(function(a, b) {
-        return parseFloat(b[IDX_ELO] || 0) - parseFloat(a[IDX_ELO] || 0);
+        return sortNumber(b[IDX_ELO], 0) - sortNumber(a[IDX_ELO], 0);
       });
       allRows = combined;
       allRows.forEach(function(row, i) { row._globalRank = i + 1; });
@@ -707,7 +776,7 @@
     })
     .catch(function(e) {
       document.getElementById("tableBody").innerHTML =
-        '<tr><td colspan="6" class="status error">Could not load data. Please try refreshing.<br><small>' + escapeHTML(e.message) + '</small></td></tr>';
+        '<tr><td colspan="7" class="status error">Could not load data. Please try refreshing.<br><small>' + escapeHTML(e.message) + '</small></td></tr>';
     });
   }
 
@@ -824,7 +893,7 @@
   function renderTable(rows) {
     var tbody = document.getElementById("tableBody");
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="no-results">No players match your search.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="no-results">No players match your search.</td></tr>';
       document.getElementById("rowCount").textContent = "0 players";
       return;
     }
@@ -836,25 +905,33 @@
       var flag        = countryCodeToFlag(countryCode);
       var name        = (row[IDX_NAME]      || "").trim();
       var elo         = (row[IDX_ELO]       || "").trim();
-      var date        = (row[IDX_DATE]      || "").trim();
-      var arena       = (row[IDX_ARENA]     || "").trim();
-      var playerId    = (row[IDX_PLAYER_ID] || "").trim();
-      var gameId      = (row[IDX_GAME_ID]   || "").trim();
+      var date        = (row[IDX_DATE]          || "").trim();
+      var arenaRating = displayOrNA(row[IDX_ARENA_RATING]);
+      var arenaFinish = displayOrNA(row[IDX_ARENA_FINISH]);
+      var playerId    = normalizeId(row[IDX_PLAYER_ID]);
+      var eloGameId   = normalizeId(row[IDX_ELO_GAME_ID]);
+      var arenaGameId = normalizeId(row[IDX_ARENA_GAME_ID]);
 
       var safeName  = escapeHTML(name);
       var safeElo   = escapeHTML(elo);
       var safeDate  = escapeHTML(date);
-      var safeArena = escapeHTML(arena);
+      var safeArenaRating = escapeHTML(arenaRating);
+      var safeArenaFinish = escapeHTML(arenaFinish);
 
-      var arenaNum = parseInt(arena, 10);
-      var arenaClass = "";
-      if (arenaNum === 1) arenaClass = "gold";
-      else if (arenaNum === 2) arenaClass = "silver";
-      else if (arenaNum === 3) arenaClass = "bronze";
+      var finishNum = parseInt(arenaFinish, 10);
+      var finishClass = "";
+      if (finishNum === 1) finishClass = "gold";
+      else if (finishNum === 2) finishClass = "silver";
+      else if (finishNum === 3) finishClass = "bronze";
 
       var eloCell = safeElo;
-      if (/^\d+$/.test(gameId)) {
-        eloCell = '<a href="https://boardgamearena.com/table?table=' + gameId + '" target="_blank" rel="noopener noreferrer" class="elo-link">' + safeElo + '</a>';
+      if (eloGameId) {
+        eloCell = '<a href="https://boardgamearena.com/table?table=' + eloGameId + '" target="_blank" rel="noopener noreferrer" class="elo-link">' + safeElo + '</a>';
+      }
+
+      var arenaRatingCell = safeArenaRating;
+      if (arenaRating !== "n/a" && arenaGameId) {
+        arenaRatingCell = '<a href="https://boardgamearena.com/table?table=' + arenaGameId + '" target="_blank" rel="noopener noreferrer" class="arena-link">' + safeArenaRating + '</a>';
       }
 
       html += '<tr>';
@@ -875,13 +952,14 @@
                        + '</a>';
         }
       });
-      var nameCell = /^\d+$/.test(playerId)
+      var nameCell = playerId
         ? '<a href="https://boardgamearena.com/player?id=' + encodeURIComponent(playerId) + '" target="_blank" rel="noopener noreferrer" class="player-link">' + safeName + '</a>'
         : safeName;
       html += '<td class="player">' + nameCell + ' ' + socialIcons + '</td>';
       html += '<td class="elo">' + eloCell + '</td>';
+      html += '<td class="arena-rating">' + arenaRatingCell + '</td>';
       html += '<td>' + safeDate + '</td>';
-      html += '<td class="arena ' + arenaClass + '">' + safeArena + '</td>';
+      html += '<td class="arena ' + finishClass + '">' + safeArenaFinish + '</td>';
       html += '</tr>';
     }
 
@@ -908,7 +986,7 @@
       sortAsc = !sortAsc;
     } else {
       sortColIndex = dataIdx;
-      sortAsc = (dataIdx !== 5);
+      sortAsc = [IDX_ELO, IDX_ARENA_RATING, IDX_DATE].indexOf(dataIdx) === -1;
     }
 
     allRows.sort(function(a, b) {
@@ -916,7 +994,10 @@
       var vb = (b[dataIdx] || "").trim();
       var isDate = /^\d{4}-\d{2}-\d{2}$/.test(va) || /^\d{4}-\d{2}-\d{2}$/.test(vb);
       var cmp;
-      if (isDate) {
+      if (dataIdx === IDX_ELO || dataIdx === IDX_ARENA_RATING || dataIdx === IDX_ARENA_FINISH) {
+        var missingValue = dataIdx === IDX_ARENA_FINISH ? 9999 : 0;
+        cmp = sortNumber(va, missingValue) - sortNumber(vb, missingValue);
+      } else if (isDate) {
         cmp = va < vb ? -1 : va > vb ? 1 : 0;
       } else {
         var na = parseFloat(va);
